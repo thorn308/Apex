@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Apex Predator — Interactive Prototype</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="ext-resource-dependency" content="logos/skull-ink.png"      data-resource-id="skullInk" />
+<meta name="ext-resource-dependency" content="logos/skull-bone.png"     data-resource-id="skullBone" />
+<meta name="ext-resource-dependency" content="logos/skull-brass.png"    data-resource-id="skullBrass" />
+<meta name="ext-resource-dependency" content="photos/bolt-block.png"    data-resource-id="boltBlock" />
+<meta name="ext-resource-dependency" content="photos/mag-10rd.png"      data-resource-id="mag10rd" />
+<meta name="ext-resource-dependency" content="photos/mag-5rd.png"       data-resource-id="mag5rd" />
+<meta name="ext-resource-dependency" content="photos/sled.png"          data-resource-id="sled" />
+<meta name="ext-resource-dependency" content="photos/story-workshop.jpg" data-resource-id="storyWorkshop" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Anton&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="prototype-styles.css" />
+<style>
+  html, body { background: var(--bone, #f4f1ea); }
+  body { font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+         color: var(--ink, #0a0a0a); font-size: 15px; line-height: 1.5; }
+  #root { min-height: 100vh; }
+  /* Lightweight intro shimmer so users know prototype-only links exist */
+  .proto-flag {
+    position: fixed; bottom: 14px; left: 14px; z-index: 200;
+    background: var(--ink); color: var(--bone);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.18em; padding: 6px 10px; text-transform: uppercase;
+    border: 1px solid var(--brass);
+    opacity: 0.92;
+  }
+  .proto-flag b { color: var(--brass); }
+</style>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#2b2f33">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <!-- Brass circular badge with "BE APEX" tagline; brand-true splash. -->
+    <g fill="none" stroke="#b58c4a" stroke-width="4">
+      <circle cx="600" cy="380" r="260" />
+      <circle cx="600" cy="380" r="232" stroke-opacity="0.45" stroke-width="2"/>
+    </g>
+    <text x="600" y="320" text-anchor="middle"
+          font-family="Arial Black, Helvetica, sans-serif" font-weight="900"
+          font-size="80" fill="#f4f1ea" letter-spacing="6">APEX</text>
+    <text x="600" y="400" text-anchor="middle"
+          font-family="Arial Black, Helvetica, sans-serif" font-weight="900"
+          font-size="80" fill="#f4f1ea" letter-spacing="6">PREDATOR</text>
+    <text x="600" y="478" text-anchor="middle"
+          font-family="Arial Black, Helvetica, sans-serif" font-weight="700"
+          font-size="34" fill="#b58c4a" letter-spacing="14">BE&nbsp;APEX.</text>
+    <circle cx="600" cy="520" r="5" fill="#b58c4a"/>
+  </svg>
+</template>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="brand.jsx"></script>
+<script type="text/babel" src="proto-core.jsx"></script>
+<script type="text/babel" src="proto-pages.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+const { useRouter, parseRoute, CartProvider, CartDrawer, Toast, MobileMenu } = window;
+const { HomePage, ShopPage, ProductPage, CartPage } = window;
+const { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect } = window;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "heroVariant": "silhouette"
+}/*EDITMODE-END*/;
+
+const App = () => {
+  const [hash, navigate] = useRouter();
+  const route = parseRoute(hash);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  // Close mobile menu on route change
+  useEffect(() => { setMenuOpen(false); }, [hash]);
+
+  // Open mobile menu from nav (anywhere in the tree)
+  useEffect(() => {
+    const open = () => setMenuOpen(true);
+    window.addEventListener('ap-open-menu', open);
+    return () => window.removeEventListener('ap-open-menu', open);
+  }, []);
+
+  let page;
+  if (route.page === 'home')         page = <HomePage navigate={navigate} heroVariant={t.heroVariant} />;
+  else if (route.page === 'shop')    page = <ShopPage navigate={navigate} />;
+  else if (route.page === 'product') page = <ProductPage sku={route.sku} navigate={navigate} />;
+  else if (route.page === 'cart')    page = <CartPage navigate={navigate} />;
+  else                               page = <HomePage navigate={navigate} heroVariant={t.heroVariant} />;
+
+  return (
+    <CartProvider>
+      {page}
+      <CartDrawer navigate={navigate} />
+      <Toast/>
+      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)}
+                  navigate={navigate} currentPage={route.page} />
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection label="Home hero — right side" />
+        <TweakSelect
+          label="Variant"
+          value={t.heroVariant}
+          options={[
+            { value:'empty',      label:'Empty (text-only)' },
+            { value:'product',    label:'Product render + callouts' },
+            { value:'silhouette', label:'Skull silhouette (brass)' },
+            { value:'rail',       label:'Vertical specs rail' },
+            { value:'ledger',     label:'Field Ledger card' },
+          ]}
+          onChange={(v) => setTweak('heroVariant', v)}
+        />
+      </TweaksPanel>
+    </CartProvider>
+  );
+};
+
+// Mount once everything's loaded (defer rAF to give the deferred babel scripts time)
+function mount() {
+  if (!window.HomePage || !window.CartProvider || !window.useTweaks) { setTimeout(mount, 50); return; }
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+}
+mount();
+</script>
+</body>
+</html>
